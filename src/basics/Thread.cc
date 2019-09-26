@@ -1,17 +1,38 @@
 
-#include <pthread.h>
+#include <assert.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+
 
 #include <exception>
-#include <iostream>
 
 #include "Thread.h"
+#include "Logging.h"
 
 namespace netlib
 {
 
+namespace
+{
+  __thread pid_t CurrentThreadId = 0;
+
+  pid_t gettid()
+  {
+    return static_cast<pid_t>(syscall(SYS_gettid));
+  }
+}
+
+pid_t CurrentThread::tid()
+{
+  if(CurrentThreadId == 0)
+  {
+    CurrentThreadId = gettid();
+  }
+  return CurrentThreadId;
+}
+
 namespace details 
 {
-
 struct ThreadData {
   typedef std::function<void()> Func;
   Func func_;
@@ -32,14 +53,14 @@ struct ThreadData {
     }
     catch(const std::exception& ex)
     {
-      LOG_ERROR << "Thread " 
-                << tid_
-                << " crashed";
+      LOG << "Thread "
+          << tid_
+          << " crashed\n";
       abort();
     }
     catch(...)
     {
-      LOG_ERROR << "Unknown exception occur";
+      LOG << "Unknown exception occur\n";
       throw;
     }
   }
@@ -82,12 +103,13 @@ void Thread::start()
   if(pthread_create(&threadId_, NULL, &details::startThread, threadData))
   {
     started_ = false;
-    LOG_SYSERR << "Create new thread failed";
+    LOG << "Create new thread failed\n";
   }
   else
   {
-    LOG_INFO << "New thread started, thread id="
-             << tid_;
+    LOG << "New thread started, thread id="
+             << tid_
+             << "\n";
   }
 }
 

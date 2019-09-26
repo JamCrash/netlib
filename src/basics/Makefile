@@ -1,13 +1,9 @@
 
-MUDUO_PATH := /home/han/Desktop/VScode/build/release-install-cpp11
-INCLUDE_PATH := $(MUDUO_PATH)/include
-LIBRARY_PATH := $(MUDUO_PATH)/lib
-
 CXXFLAGS := -g	\
 						-Wall \
-						-O0	\
-						-I$(INCLUDE_PATH)
-LKFLAGS	:= -L$(LIBRARY_PATH) -lpthread -lmuduo_base
+						-O0
+
+LKFLAGS	:= -lpthread
 
 objects := Thread.o
 

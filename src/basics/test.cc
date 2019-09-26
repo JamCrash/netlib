@@ -1,9 +1,12 @@
 
+
 #include <iostream>
+
+#include "Logging.h"
 
 using namespace std;
 
 int main()
 {
-  cout << __FILE__ << ": " << __LINE__ << endl;
+  LOG << std::endl;
 }

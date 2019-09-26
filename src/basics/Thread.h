@@ -2,8 +2,6 @@
 #define THREAD_H
 
 #include <unistd.h>
-#include <pthread.h>
-#include <sys/syscall.h>
 
 #include <functional>
 
@@ -27,8 +25,6 @@ class Thread: noncopyable {
   pid_t tid() { return tid_; }
   
  private:
-  static void startFunc();
-
   bool started_;
   bool joined_;
   pthread_t threadId_;
@@ -38,17 +34,8 @@ class Thread: noncopyable {
 
 namespace CurrentThread
 {
-  __thread pid_t CurrentThreadID;
-
-  inline pid_t tid()
-  {
-    if(CurrentThreadID == 0) 
-    {
-      CurrentThreadID = ::syscall(SYS_gettid);
-    }
-    return CurrentThreadID;
-  }
-} // CurrentThread
+  pid_t tid();
+} //CurrentThread
 
 } // netlib
 

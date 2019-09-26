@@ -15,4 +15,5 @@ int main()
   Thread thread(fn);
   thread.start();
   printf("in main\n");
+  sleep(1);
 }

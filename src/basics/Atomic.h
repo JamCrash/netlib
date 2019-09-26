@@ -15,7 +15,7 @@ class AtomicInteger: netlib::noncopyable {
   AtomicInteger()
   : value_(0)
   {
-  {
+  }
 
   T get() const { return value_; }
 

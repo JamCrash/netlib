@@ -3,6 +3,7 @@
 #include "src/net/EventLoop.h"
 #include "src/net/Channel.h"
 #include "src/net/Poller.h"
+#include "src/net/TimerQueue.h"
 
 #include <assert.h>
 #include <sys/eventfd.h>
@@ -38,7 +39,9 @@ EventLoop::EventLoop()
   loopThreadId_(netlib::CurrentThread::tid()),
   poller_(new Poller(this)),
   wakeupFd_(createEventFd()),
-  wakeupChannel_(new Channel(this, wakeupFd_))
+  wakeupChannel_(new Channel(this, wakeupFd_)),
+  callingPendingFunctor_(false),
+  timers_(new TimerQueue(this))
 {
   if(currentThreadLoop != NULL)
   {
@@ -67,12 +70,15 @@ void EventLoop::loop()
   while(!quit_)
   {
     activeChannels_.clear();
+    pendingFunctors_.clear();
+
     poller_->poll(timeOutMs, &activeChannels_);
     for(ChannelList::iterator it = activeChannels_.begin();
         it != activeChannels_.end(); ++it)
     {
       (*it)->handleEvent();
     }
+    doFunctors();
   }
 
   LOG << "eventloop stop looping\n";
@@ -93,6 +99,43 @@ void EventLoop::wakeup()
   {
     LOG << "EventLoop wakeup failed\n";
   }
+}
+
+void EventLoop::runInLoop(const Functor& func)
+{
+  if(isInLoopThread())
+  {
+    func();
+  }
+  else
+  {
+    queueInLoop(func);
+  }
+}
+
+void EventLoop::queueInLoop(const Functor& func)
+{
+  {
+    MutexLockGuard guard(mutexLock_);
+    pendingFunctors_.push_back(func);
+  }
+
+  if(!isInLoopThread() || callingPendingFunctor_)
+  {
+    wakeup();
+  }
+}
+
+void EventLoop::doFunctors()
+{
+  assertInLoopThread();
+
+  callingPendingFunctor_ = true;
+  for(const Functor& func: pendingFunctors_)
+  {
+    func();
+  }
+  callingPendingFunctor_ = false;
 }
 
 void EventLoop::handleRead()
@@ -117,6 +160,23 @@ void EventLoop::removeChannel(Channel* channel)
   assert(channel->ownerLoop() == this);
   assertInLoopThread();
   poller_->removeChannel(channel);
+}
+
+TimerId EventLoop::runAt(const Timestamp& when, const TimerCallBack& cb)
+{
+  return timers_->addTimer(cb, when, 0.0);
+}
+
+TimerId EventLoop::runAfter(double delay, const TimerCallBack& cb)
+{
+  Timestamp when = addTime(Timestamp::now(), delay);
+  return timers_->addTimer(cb, when, 0.0);
+}
+
+TimerId EventLoop::runEvery(double interval, const TimerCallBack& cb)
+{
+  Timestamp when = addTime(Timestamp::now(), interval);
+  return timers_->addTimer(cb, when, interval);
 }
 
 void EventLoop::abortNotInLoop()

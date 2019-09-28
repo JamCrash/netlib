@@ -25,11 +25,11 @@ class Thread: noncopyable {
   pid_t tid() { return tid_; }
   
  private:
+  ThreadFunc func_;
   bool started_;
   bool joined_;
   pthread_t threadId_;
   pid_t tid_;
-  ThreadFunc func_;
 };
 
 namespace CurrentThread

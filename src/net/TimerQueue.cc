@@ -40,9 +40,9 @@ void resetTimerFd(int tmFd, Timestamp when)
   struct itimerspec new_value;
   bzero(&new_value, sizeof new_value);
   new_value.it_value.tv_sec = 
-    when.microSecondsFromEpoch / Timestamp::microSecondsPerSecond;
+    when.microSecondsFromEpoch() / Timestamp::microSecondsPerSecond;
   new_value.it_value.tv_nsec = 
-    (when.microSecondsFromEpoch % Timestamp::microSecondsPerSecond) * 1000;
+    (when.microSecondsFromEpoch() % Timestamp::microSecondsPerSecond) * 1000;
 
   if(timerfd_settime(tmFd, 0, &new_value, NULL) != 0)
   {
@@ -56,7 +56,7 @@ TimerQueue::TimerQueue(EventLoop* loop)
 : ownerLoop_(loop),
   timerFd_(createTimerFd()),
   timerChannel_(new Channel(ownerLoop_, timerFd_)),
-  cancel_(false)
+  callingExpiredTimers_(false)
 {
   timerChannel_->setReadCallBack(
     std::bind(&TimerQueue::handleRead, this));
@@ -65,7 +65,11 @@ TimerQueue::TimerQueue(EventLoop* loop)
 
 TimerQueue::~TimerQueue()
 {
-
+  ownerLoop_->assertInLoopThread();
+  for(const TimerEntry& entry: timers_)
+  {
+    delete entry.second;
+  }
 }
 
 TimerId TimerQueue::addTimer(CallBack cb, Timestamp expiration, double interval)
@@ -93,12 +97,15 @@ void TimerQueue::handleRead()
   Timestamp now = Timestamp::now();
   readTimerFd(timerFd_);
 
+  callingExpiredTimers_ = true;
+  cancelTimers_.clear();
   std::vector<TimerEntry> expiredTimers = getExpired(now);
   //assert(expiredTimers.size() > 0);
   for(const TimerEntry& entry: expiredTimers)
   {
     entry.second->run();
   }
+  callingExpiredTimers_ = false;
 
   reset(expiredTimers, now);
 }
@@ -106,16 +113,15 @@ void TimerQueue::handleRead()
 std::vector<TimerQueue::TimerEntry> TimerQueue::getExpired(Timestamp now)
 {
   ownerLoop_->assertInLoopThread();
-  Timestamp now = Timestamp::now();
   std::vector<TimerEntry> expiredTimers;
   
-  TimerEntry timerEntry = 
-    std::make_pair(now, reinterpret_cast<Timer*>(UINTPTR_MAX));
+  TimerEntry timerEntry
+    = std::make_pair(now, reinterpret_cast<Timer*>(UINTPTR_MAX));
   TimerSet::iterator it = timers_.lower_bound(timerEntry);
   // FIX ME: now <= it->first ?? 
   assert(it == timers_.end() || now < it->first);
   std::copy(timers_.begin(), it, std::back_inserter(expiredTimers));
-  timers_.erase(timers_.begin, it);
+  timers_.erase(timers_.begin(), it);
 
   return expiredTimers;
 }
@@ -127,7 +133,8 @@ void TimerQueue::reset(const std::vector<TimerEntry>& expiredTimers, Timestamp n
 
   for(const TimerEntry& entry: expiredTimers)
   {
-    if(entry.second->repeat())
+    if(entry.second->repeat()
+       && cancelTimers_.find(entry) == cancelTimers_.end())
     {
       entry.second->restart(now);
       insert(entry.second);
@@ -166,4 +173,28 @@ bool TimerQueue::insert(Timer* timer)
   }
 
   return expiredChanged;
+}
+
+void TimerQueue::cancel(TimerId timerId)
+{
+  ownerLoop_->runInLoop(
+    std::bind(&TimerQueue::cancelInLoop, this, timerId.timer_));
+}
+
+void TimerQueue::cancelInLoop(Timer* timer)
+{
+  ownerLoop_->assertInLoopThread();
+
+  TimerEntry timerEntry
+    = std::make_pair(timer->expiration(), timer);
+  TimerSet::iterator it
+    = timers_.find(timerEntry);
+  if(it != timers_.end())
+  {
+    timers_.erase(it);
+  }
+  else if(callingExpiredTimers_)
+  {
+    cancelTimers_.insert(timerEntry);
+  }
 }

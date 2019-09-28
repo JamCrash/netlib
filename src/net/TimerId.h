@@ -11,6 +11,7 @@ namespace net
 {
 
 class TimerId: netlib::copyable {
+  friend class TimerQueue;
  public:
   TimerId(Timer* timer)
   : timer_(timer),

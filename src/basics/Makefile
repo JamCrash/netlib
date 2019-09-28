@@ -5,12 +5,14 @@ CXXFLAGS := -g	\
 
 LKFLAGS	:= -lpthread
 
-objects := Thread.o
+objects := Thread.o Timestamp.o
 
 all: $(objects)
 
 Thread.o:	noncopyable.h Thread.h
 	g++ $(CXXFLAGS) -c Thread.cc $(LKFLAGS)
+Timestamp.o: 
+	g++ $(CXXFLAGS) -c Timestamp.cc $(LKFLAGS)
 
 .PHONY:	clean
 clean:

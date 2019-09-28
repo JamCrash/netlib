@@ -13,12 +13,10 @@ using namespace netlib::net;
 Poller::Poller(EventLoop* loop)
 : ownerLoop_(loop)
 {
-
 }
 
 Poller::~Poller()
 {
-
 }
 
 void Poller::updateChannel(Channel* channel)
@@ -43,18 +41,17 @@ void Poller::updateChannel(Channel* channel)
     int idx = channel->index();
     assert(0<= idx && idx < static_cast<int>(pfds_.size()));
     struct pollfd& pfd = pfds_[idx];
-    assert(channel->fd() == pfd.fd || channel->fd == -pfd.fd - 1);
+    assert(channel->fd() == pfd.fd || channel->fd() == -pfd.fd - 1);
     pfd.events = static_cast<short>(channel->events());
     pfd.revents = 0;
     if(channel->isNoEvents())
     {
-      pfd.fd = -channel->fd - 1;
+      pfd.fd = -channel->fd() - 1;
     }
     else
     {
-      pfd.fd = channel->fd;
+      pfd.fd = channel->fd();
     }
-    
   }
 }
 
@@ -100,7 +97,7 @@ void Poller::poll(int timeoutMs, ChannelList* activeChannels)
   }
   else
   {
-    LOG << activeNums << "occur\n";
+    LOG << activeNums << " occur\n";
     fillActiveChannels(activeChannels, activeNums);
   }
 }

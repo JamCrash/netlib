@@ -61,6 +61,7 @@ class Channel: netlib::noncopyable {
   int events_;
   int revents_;
   int index_; //for poller
+  bool handlingEvent_;
 
   static const int noEvent;
   static const int readEvent;

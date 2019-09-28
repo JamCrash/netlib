@@ -21,7 +21,7 @@ class AtomicInteger: netlib::noncopyable {
 
   T getAndAdd(T x)
   {
-    MutexLockGuard(lock_);
+    MutexLockGuard guard(lock_);
     T tmpval = value_;
     value_ = value_ + x;
     return tmpval;

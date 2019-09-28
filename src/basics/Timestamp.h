@@ -1,7 +1,7 @@
 #ifndef TIMESTAMP_H
 #define TIMESTAMP_H
 
-#include "src/basics/copyable.h"
+#include "copyable.h"
 
 #include <stdint.h>
 
@@ -26,20 +26,20 @@ class Timestamp: netlib::copyable {
   int64_t microSecondsFromEpoch_;
 };
 
-inline Timestamp addTime(Timestamp timestamp, double interval)
+inline Timestamp addTime(Timestamp timestamp, double offsetTime)
 {
   //MIX ME
   //check timestamp valid
-  int64_t microSeconds = static_cast<int64_t>(interval * Timestamp::microSecondsPerSecond);
+  int64_t microSeconds = static_cast<int64_t>(offsetTime * Timestamp::microSecondsPerSecond);
   return Timestamp(timestamp.microSecondsFromEpoch() + microSeconds);
 }
 
-bool operator==(Timestamp lhs, Timestamp rhs)
+inline bool operator==(Timestamp lhs, Timestamp rhs)
 {
   return lhs.microSecondsFromEpoch() == rhs.microSecondsFromEpoch();
 }
 
-bool operator<(Timestamp lhs, Timestamp rhs)
+inline bool operator<(Timestamp lhs, Timestamp rhs)
 {
   return lhs.microSecondsFromEpoch() < rhs.microSecondsFromEpoch();
 }

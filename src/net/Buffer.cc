@@ -34,6 +34,7 @@ ssize_t Buffer::readFd(int fd, int* savedErrno)
     writerIndex_ = buffer_.size();
     append(tmpBuffer, n-writeable);
   }
+  return n;
 }
 
 } // net

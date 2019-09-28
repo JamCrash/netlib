@@ -25,24 +25,25 @@ class TimerQueue: netlib::noncopyable {
   ~TimerQueue();
 
   TimerId addTimer(CallBack cb, Timestamp expiration, double interval);
+  void cancel(TimerId timerId);
 
  private:
   typedef std::pair<Timestamp, Timer*> TimerEntry;
   typedef std::set<TimerEntry> TimerSet;
-  typedef std::pair<Timer*, int64_t> CancelTimerEntry;
-  typedef std::set<CancelTimerEntry> CancelTimerSet;
 
   void addTimerInLoop(Timer* timer);
   void handleRead();
   std::vector<TimerEntry> getExpired(Timestamp now);
   void reset(const std::vector<TimerEntry>& expiredTimers, Timestamp now);
   bool insert(Timer* timer);
+  void cancelInLoop(Timer* timer);
 
   EventLoop* ownerLoop_;
   const int timerFd_;
   std::unique_ptr<Channel> timerChannel_;
-  bool cancel_;
-  CancelTimerSet cancelTimers_;
+  // to process the case when timer cancel itself in callback function
+  bool callingExpiredTimers_;
+  TimerSet cancelTimers_;
   TimerSet timers_;
 };
 

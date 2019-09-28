@@ -80,8 +80,8 @@ Thread::Thread(const ThreadFunc& func)
   : func_(func),
     started_(false),
     joined_(false),
-    tid_(CurrentThread::tid()),
-    threadId_(0)
+    threadId_(0),
+    tid_(CurrentThread::tid())
 {
 
 }

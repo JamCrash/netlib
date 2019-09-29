@@ -18,6 +18,9 @@ testTimer: testTimer.cc
 testEventLoop: testEventLoop.cc
 	g++ $(CXXFLAGS) $< $(objects) -o $@ -lpthread
 
+testPoller: testPoller.cc
+	g++ $(CXXFLAGS) $< $(objects) -o $@ -lpthread
+
 .PHONY: clean
 clean:
 	rm -f test*

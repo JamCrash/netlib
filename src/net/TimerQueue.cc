@@ -31,22 +31,35 @@ void readTimerFd(int tmFd)
   ssize_t n = ::read(tmFd, &val, sizeof val);
   if(n != sizeof val)
   {
-    LOG << "read timerFd failes\n";
+    LOG << "read timerFd failed\n";
   }
+}
+
+struct timespec expirationInterval(Timestamp when)
+{
+  int64_t microSecondsInterval 
+    = when.microSecondsFromEpoch() - Timestamp::now().microSecondsFromEpoch();
+  if(microSecondsInterval < 100) 
+    microSecondsInterval = 100;
+  struct timespec result;
+  result.tv_sec = microSecondsInterval / Timestamp::microSecondsPerSecond;
+  result.tv_nsec = (microSecondsInterval % Timestamp::microSecondsPerSecond) * 1000;
+  return result;
 }
 
 void resetTimerFd(int tmFd, Timestamp when)
 {
   struct itimerspec new_value;
   bzero(&new_value, sizeof new_value);
-  new_value.it_value.tv_sec = 
-    when.microSecondsFromEpoch() / Timestamp::microSecondsPerSecond;
-  new_value.it_value.tv_nsec = 
-    (when.microSecondsFromEpoch() % Timestamp::microSecondsPerSecond) * 1000;
+  new_value.it_value = expirationInterval(when);
 
   if(timerfd_settime(tmFd, 0, &new_value, NULL) != 0)
   {
     LOG << "reset timerFd failed\n";
+  }
+  else
+  {
+    LOG << "timer expiration changed\n";
   }
 }
 
@@ -87,6 +100,7 @@ void TimerQueue::addTimerInLoop(Timer* timer)
   bool expireChanged = insert(timer);
   if(expireChanged)
   {
+    LOG << "expiration changed\n";
     resetTimerFd(timerFd_, timer->expiration());
   }
 }
@@ -100,7 +114,7 @@ void TimerQueue::handleRead()
   callingExpiredTimers_ = true;
   cancelTimers_.clear();
   std::vector<TimerEntry> expiredTimers = getExpired(now);
-  //assert(expiredTimers.size() > 0);
+  assert(expiredTimers.size() > 0);
   for(const TimerEntry& entry: expiredTimers)
   {
     entry.second->run();

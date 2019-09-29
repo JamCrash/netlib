@@ -20,6 +20,7 @@ void callback()
   a++;
   cout << "in callback" << endl;
   if(a == 4) {
+    a = 1;
     loop.quit();
   }
 }
@@ -35,9 +36,25 @@ void wakeupLoop()
   loop.runInLoop(wakeup);
 }
 
+void timerCallBack1()
+{
+  cout << "timeout CallBack1" << endl;
+}
+
+void timerCallBack2()
+{
+  cout << "timeout CallBack2" << endl;
+  a++;
+  if(a == 5)
+  {
+    a = 1;
+    loop.quit();
+  }
+}
+
 int main()
 {
-  Channel channel(&loop, 0);
+/*   Channel channel(&loop, 0);
   channel.setWriteCallBack(callback);
   channel.setEnableWriting();
 
@@ -47,4 +64,8 @@ int main()
   thread.join();
   if(!thread.joined())
     assert(0);
+ */
+  loop.runAfter(3.0, timerCallBack1);
+  loop.runEvery(1.0, timerCallBack2);
+  loop.loop();
 }

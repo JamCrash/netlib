@@ -73,6 +73,7 @@ void EventLoop::loop()
     pendingFunctors_.clear();
 
     poller_->poll(timeOutMs, &activeChannels_);
+    LOG << " " << activeChannels_.size() << "\n";
     for(ChannelList::iterator it = activeChannels_.begin();
         it != activeChannels_.end(); ++it)
     {

@@ -22,9 +22,11 @@ class InetAddress: netlib::copyable {
   void setSockAddress(const struct sockaddr_in& addr) { addr_ = addr; }
 
   std::string toHostPort() const;
+
+  const sockaddr_in& getAddr() const { return addr_; }
   
  private:
-  sockaddr_in addr_;
+  struct sockaddr_in addr_;
 };
 
 } // net

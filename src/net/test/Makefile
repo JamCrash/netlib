@@ -7,6 +7,8 @@ CXXFLAGS := -g	\
 
 objects := ../Channel.cc ../EventLoop.cc ../Poller.cc	\
 					 ../Timer.cc ../TimerQueue.cc	\
+					 ../InetAddress.cc	../Acceptor.cc	\
+					 ../Socket.cc	../SocketOps.cc	\
 					 ../../basics/Timestamp.cc ../../basics/Thread.cc
 
 test:	test.cc
@@ -21,6 +23,11 @@ testEventLoop: testEventLoop.cc
 testPoller: testPoller.cc
 	g++ $(CXXFLAGS) $< $(objects) -o $@ -lpthread
 
+testAcceptor: testAcceptor.cc
+	g++ $(CXXFLAGS) $< $(objects) -o $@ -lpthread
+
+TESTS := test testTimer testEventLoop testPoller testAcceptor
+
 .PHONY: clean
 clean:
-	rm -f test*
+	rm -f $(TESTS)

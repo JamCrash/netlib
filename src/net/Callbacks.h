@@ -22,6 +22,7 @@ typedef std::function<void(const TcpConnectionPtr& conn,
                            Timestamp receiveTime)> MessageCallBack;
 typedef std::function<void(const TcpConnectionPtr& conn)> WriteCompleteCallBack;
 typedef std::function<void(const TcpConnectionPtr& conn)> ErrorCallBack;
+typedef std::function<void(const TcpConnectionPtr& conn)> CloseCallBack;
 
 } // net
 } // netlib

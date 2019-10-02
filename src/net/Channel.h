@@ -54,6 +54,8 @@ class Channel: netlib::noncopyable {
   { events_ = noEvent; update(); }
   bool isNoEvents() const 
   { return events_ == noEvent; };
+  bool isWriting() const 
+  { return events & writeEvent; }
 
  private:
   EventLoop* loop_;

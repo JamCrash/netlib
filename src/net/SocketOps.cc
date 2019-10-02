@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <unistd.h>
+#include <strings.h>
 
 using namespace netlib;
 
@@ -107,6 +108,28 @@ void socket::fromHostPort(const char* ip, uint16_t port, struct sockaddr_in* add
   addr->sin_port = socket::hostToNetwork16(port);
   if(::inet_pton(AF_INET, ip, &addr->sin_addr) <= 0)
   {
-    LOG << "socket::fromHostPort\n";
+    LOG << "socket::fromHostPort failed\n";
+  }
+}
+
+struct sockaddr_in socket::getLocalAddress(int sockFd)
+{
+  struct sockaddr_in localAddr;
+  bzero(&localAddr, sizeof localAddr);
+  socklen_t sockLen = sizeof localAddr;
+  if(::getsockname(sockFd, reinterpret_cast<SA*>(&localAddr), &sockLen) != 0)
+  {
+    LOG << "socket::getLocalAddress failed\n";
+  }
+}
+
+struct sockaddr_in socket::getPeerAddress(int sockFd)
+{
+  struct sockaddr_in peerAddr;
+  bzero(&peerAddr, sizeof peerAddr);
+  socklen_t sockLen = sizeof peerAddr;
+  if(::getpeername(sockFd, reinterpret_cast<SA*>(&peerAddr), &sockLen) != 0)
+  {
+    LOG << "socket::getPeerAddress failed\n";
   }
 }

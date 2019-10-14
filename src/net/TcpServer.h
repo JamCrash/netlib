@@ -17,6 +17,7 @@ namespace net
 class EventLoop;
 class TcpConnection;
 class Acceptor;
+class EventLoopThreadPool;
 
 class TcpServer: netlib::noncopyable {
  public:
@@ -26,9 +27,9 @@ class TcpServer: netlib::noncopyable {
   
   ~TcpServer();
 
+  void setThreadNums(int nums);
+
   void start();
-
-
 
   void setConnectionCallBack(const ConnectionCallBack& cb)
   { connectionCallBack_ = cb; }
@@ -50,7 +51,8 @@ class TcpServer: netlib::noncopyable {
   std::unique_ptr<Acceptor> acceptor_;
   bool start_;
   int nextConnId_;
-  ConnectionMap connections_;  
+  ConnectionMap connections_;
+  std::unique_ptr<EventLoopThreadPool> threadPool_;    // thread pool
 
   ConnectionCallBack        connectionCallBack_;
   MessageCallBack           messageCallBack_;

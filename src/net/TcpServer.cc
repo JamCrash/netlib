@@ -6,6 +6,7 @@
 #include "src/net/Channel.h"
 #include "src/net/Acceptor.h"
 #include "src/net/TcpConnection.h"
+#include "src/net/EventLoopThreadPool.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -24,7 +25,8 @@ TcpServer::TcpServer(EventLoop* loop,
   listenAddress_(listenAddress),
   acceptor_(new Acceptor(loop_, listenAddress_)),
   start_(false),
-  nextConnId_(1)
+  nextConnId_(1),
+  threadPool_(new EventLoopThreadPool(loop))
 {
   acceptor_->setNewConnectionCallBack(
     std::bind(&TcpServer::newConnection, this, _1, _2));
@@ -34,13 +36,23 @@ TcpServer::~TcpServer()
 {
 }
 
+void TcpServer::setThreadNums(int nums)
+{
+  threadPool_->setThreadNum(nums > 0 ? nums : 0);
+}
+
 void TcpServer::start()
 {
-  assert(!start_);
-  start_ = true;
+  if(!start_)
+  {
+    start_ = true;
+    threadPool_->start();
+  }
 
-  loop_->runInLoop(
-    std::bind(&Acceptor::listen, acceptor_.get()));
+  if(!acceptor_->listening()) {
+    loop_->runInLoop(
+      std::bind(&Acceptor::listen, acceptor_.get()));
+  }
 }
 
 void TcpServer::newConnection(int connFd, const InetAddress& peerAddress)
@@ -54,8 +66,9 @@ void TcpServer::newConnection(int connFd, const InetAddress& peerAddress)
 
   InetAddress localAddress(socket::getLocalAddress(connFd));
 
+  EventLoop* ioLoop = threadPool_->getNextLoop();
   TcpConnectionPtr newConn
-    = std::make_shared<TcpConnection>(this,
+    = std::make_shared<TcpConnection>(ioLoop,
                                       connFd,
                                       connName,
                                       localAddress,
@@ -66,7 +79,7 @@ void TcpServer::newConnection(int connFd, const InetAddress& peerAddress)
   newConn->setWriteCompleteCallBack(writeCompleteCallBack_);
   newConn->setCloseCallBack(
     std::bind(&TcpServer::removeConnection, this, _1));
-  loop_->runInLoop(
+  ioLoop->runInLoop(
     std::bind(&TcpConnection::connectionEstablished, newConn));
 }
 

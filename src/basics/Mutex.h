@@ -42,6 +42,11 @@ class MutexLock: netlib::noncopyable {
     pthread_mutex_unlock(&mutex_);
   }
 
+  pthread_mutex_t* getMutexLock()
+  { 
+    return &mutex_;
+  }
+  
  private:
   pthread_mutex_t mutex_;
   pid_t holder;
@@ -65,6 +70,8 @@ class MutexLockGuard: netlib::noncopyable {
 };
 
 #define MutexLockGuard(x) error "Missing guard object name"
+
+
 
 } // netlib
 
